@@ -9,9 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useDesigns } from '../context/DesignContext';
 
-const defaultCode = `import React from 'react';
-
-export default function CustomDesign() {
+const defaultCode = `export default function CustomDesign() {
   return (
     <div className="relative w-[600px] h-[600px] bg-gradient-to-br from-blue-500 to-purple-600 p-8 flex flex-col items-center justify-center text-white">
       <h1 className="text-4xl font-bold mb-4">Mon Design</h1>
@@ -19,6 +17,28 @@ export default function CustomDesign() {
     </div>
   );
 }`;
+
+const previewTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    COMPONENT_CODE
+    ReactDOM.render(<CustomDesign />, document.getElementById('root'));
+  </script>
+</body>
+</html>
+`;
 
 export default function DesignEditor() {
   const { id } = useParams();
@@ -33,33 +53,50 @@ export default function DesignEditor() {
 
   useEffect(() => {
     if (id) {
-      const design = getDesignById(id);
-      if (design) {
-        setCode(design.code);
-        setTitle(design.title);
-        setDescription(design.description);
-        setCategory(design.category);
-      }
+      const loadDesign = async () => {
+        try {
+          const design = await getDesignById(id);
+          if (design) {
+            setCode(design.code);
+            setTitle(design.title);
+            setDescription(design.description);
+            setCategory(design.category);
+          }
+        } catch (err) {
+          setError("Erreur lors du chargement du design");
+        }
+      };
+      loadDesign();
     }
   }, [id]);
 
-  const handleSave = () => {
+  const handlePreview = () => {
     try {
-      // Créer un composant temporaire à partir du code
-      const tempComponent = new Function('React', `return ${code}`)(React);
-      
+      const previewFrame = document.getElementById('preview-frame');
+      if (previewFrame) {
+        const htmlContent = previewTemplate.replace('COMPONENT_CODE', code);
+        previewFrame.srcdoc = htmlContent;
+      }
+      setError(null);
+    } catch (err) {
+      setError(`Erreur de prévisualisation: ${err.message}`);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
       const designData = {
         title,
         description,
         category,
         code,
-        component: tempComponent
+        componentName: 'CustomDesign'
       };
 
       if (id) {
-        updateDesign(parseInt(id), designData);
+        await updateDesign(id, designData);
       } else {
-        addDesign(designData);
+        await addDesign(designData);
       }
 
       navigate('/library');
@@ -68,23 +105,17 @@ export default function DesignEditor() {
     }
   };
 
-  const handlePreview = () => {
-    try {
-      // Créer un composant temporaire pour la prévisualisation
-      const PreviewComponent = new Function('React', `return ${code}`)(React);
-      const previewContainer = document.getElementById('preview-container');
-      if (previewContainer) {
-        ReactDOM.render(<PreviewComponent />, previewContainer);
-      }
-      setError(null);
-    } catch (err) {
-      setError(`Erreur de prévisualisation: ${err.message}`);
-    }
-  };
-
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
   };
+
+  // Appeler handlePreview à chaque modification du code
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handlePreview();
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [code]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -206,7 +237,12 @@ export default function DesignEditor() {
                   previewMode === 'mobile' ? 'transform scale-75' : ''
                 }`}
               >
-                <div id="preview-container" />
+                <iframe
+                  id="preview-frame"
+                  title="preview"
+                  className="w-[600px] h-[600px] border-0"
+                  sandbox="allow-scripts"
+                />
               </div>
             </div>
           </div>

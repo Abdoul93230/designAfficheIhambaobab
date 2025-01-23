@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   TrashIcon, 
@@ -6,19 +6,35 @@ import {
   ListBulletIcon,
   Squares2X2Icon,
   EyeIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useDesigns } from '../context/DesignContext';
 
 export default function Library() {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('date');
   const { designs, deleteDesign } = useDesigns();
 
   const categories = ['all', ...new Set(designs.map(design => design.category))];
-  const filteredDesigns = selectedCategory === 'all' 
-    ? designs 
-    : designs.filter(design => design.category === selectedCategory);
+  
+  const filteredAndSortedDesigns = designs
+    .filter(design => {
+      const matchesCategory = selectedCategory === 'all' || design.category === selectedCategory;
+      const matchesSearch = design.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          design.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      } else if (sortBy === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
 
   return (
     <div className="space-y-6">
@@ -52,28 +68,52 @@ export default function Library() {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex space-x-4 mb-6 overflow-x-auto">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`flex items-center px-4 py-2 rounded-md ${
-                selectedCategory === category
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+        {/* Barre de recherche et filtres */}
+        <div className="mb-6 space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Rechercher un design..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
+              />
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md"
             >
-              <FolderIcon className="h-5 w-5 mr-2" />
-              {category === 'all' ? 'Toutes les catégories' : category}
-            </button>
-          ))}
+              <option value="date">Trier par date</option>
+              <option value="title">Trier par titre</option>
+            </select>
+          </div>
+
+          <div className="flex space-x-4 overflow-x-auto">
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`flex items-center px-4 py-2 rounded-md whitespace-nowrap ${
+                  selectedCategory === category
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <FolderIcon className="h-5 w-5 mr-2" />
+                {category === 'all' ? 'Toutes les catégories' : category}
+              </button>
+            ))}
+          </div>
         </div>
 
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredDesigns.map((design) => (
+            {filteredAndSortedDesigns.map((design) => (
               <div
-                key={design.id}
+                key={design._id}
                 className="bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="relative w-full h-48 overflow-hidden bg-gray-200 group">
@@ -83,13 +123,13 @@ export default function Library() {
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
                     <div className="flex space-x-4">
                       <Link
-                        to={`/design/${design.id}`}
+                        to={`/design/${design._id}`}
                         className="p-2 bg-white rounded-full text-gray-900 hover:bg-gray-100"
                       >
                         <EyeIcon className="h-6 w-6" />
                       </Link>
                       <Link
-                        to={`/editor/${design.id}`}
+                        to={`/editor/${design._id}`}
                         className="p-2 bg-white rounded-full text-gray-900 hover:bg-gray-100"
                       >
                         <CodeBracketIcon className="h-6 w-6" />
@@ -106,7 +146,7 @@ export default function Library() {
                     </span>
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => deleteDesign(design.id)}
+                        onClick={() => deleteDesign(design._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                       >
                         <TrashIcon className="h-5 w-5" />
@@ -119,9 +159,9 @@ export default function Library() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredDesigns.map((design) => (
+            {filteredAndSortedDesigns.map((design) => (
               <div
-                key={design.id}
+                key={design._id}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
               >
                 <div className="flex items-center space-x-4">
@@ -141,19 +181,19 @@ export default function Library() {
                   </span>
                   <div className="flex space-x-2">
                     <Link
-                      to={`/design/${design.id}`}
+                      to={`/design/${design._id}`}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
                     >
                       <EyeIcon className="h-5 w-5" />
                     </Link>
                     <Link
-                      to={`/editor/${design.id}`}
+                      to={`/editor/${design._id}`}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
                     >
                       <CodeBracketIcon className="h-5 w-5" />
                     </Link>
                     <button 
-                      onClick={() => deleteDesign(design.id)}
+                      onClick={() => deleteDesign(design._id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                     >
                       <TrashIcon className="h-5 w-5" />
