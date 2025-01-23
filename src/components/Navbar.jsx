@@ -1,7 +1,16 @@
-import { Link } from 'react-router-dom';
-import { HomeIcon, PencilSquareIcon, CalendarIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { Link, useNavigate } from 'react-router-dom';
+import { HomeIcon, PencilSquareIcon, CalendarIcon, BookOpenIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <nav className="bg-white shadow-lg">
       <div className="container mx-auto px-4">
@@ -12,7 +21,7 @@ export default function Navbar() {
             </Link>
           </div>
           
-          <div className="flex space-x-8">
+          <div className="flex items-center space-x-8">
             <Link to="/" className="flex items-center text-gray-600 hover:text-gray-900">
               <HomeIcon className="h-5 w-5 mr-1" />
               <span>Accueil</span>
@@ -29,6 +38,16 @@ export default function Navbar() {
               <BookOpenIcon className="h-5 w-5 mr-1" />
               <span>Bibliothèque</span>
             </Link>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-600">{user?.name}</span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5 mr-1" />
+                <span>Déconnexion</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

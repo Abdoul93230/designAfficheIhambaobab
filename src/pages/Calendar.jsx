@@ -10,12 +10,11 @@ export default function Calendar() {
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDesign, setSelectedDesign] = useState('');
-  const { schedules, addSchedule, deleteSchedule, getSchedulesByDateRange } = useSchedules();
+  const { schedules, addSchedule, deleteSchedule } = useSchedules();
   const { designs } = useDesigns();
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    // Convertir les planifications en événements pour le calendrier
     const calendarEvents = schedules.map(schedule => ({
       id: schedule._id,
       title: schedule.title,
@@ -98,7 +97,7 @@ export default function Calendar() {
 
       {/* Modal de planification */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Planifier une publication</h2>
