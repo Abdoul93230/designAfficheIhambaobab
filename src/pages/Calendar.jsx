@@ -1,30 +1,32 @@
-import { useState, useEffect } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useSchedules } from '../context/ScheduleContext';
-import { useDesigns } from '../context/DesignContext';
+import { useState, useEffect } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useSchedules } from "../context/ScheduleContext";
+import { useDesigns } from "../context/DesignContext";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function Calendar() {
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedDesign, setSelectedDesign] = useState('');
+  const [selectedDesign, setSelectedDesign] = useState("");
   const { schedules, addSchedule, deleteSchedule } = useSchedules();
   const { designs } = useDesigns();
   const [events, setEvents] = useState([]);
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
-    const calendarEvents = schedules.map(schedule => ({
+    const calendarEvents = schedules.map((schedule) => ({
       id: schedule._id,
       title: schedule.title,
       start: schedule.startDate,
       end: schedule.endDate,
-      backgroundColor: schedule.status === 'published' ? '#10B981' : '#3B82F6',
+      backgroundColor: schedule.status === "published" ? "#10B981" : "#3B82F6",
       extendedProps: {
         designId: schedule.designId._id,
-        status: schedule.status
-      }
+        status: schedule.status,
+      },
     }));
     setEvents(calendarEvents);
   }, [schedules]);
@@ -42,25 +44,50 @@ export default function Calendar() {
           designId,
           startDate: selectedDate,
           endDate: selectedDate,
-          status: 'scheduled'
+          status: "scheduled",
+          platform: "facebook", // Valeur par défaut
+          audience: "all", // Valeur par défaut
+          metrics: {
+            views: 0,
+            likes: 0,
+            shares: 0,
+            clicks: 0,
+          },
         };
+
         await addSchedule(newSchedule);
+        addNotification({
+          title: "Succès",
+          message: "Publication planifiée avec succès",
+        });
+        setShowModal(false);
+        setSelectedDate(null);
+        setSelectedDesign("");
       } catch (error) {
-        console.error('Error adding schedule:', error);
+        console.error("Error adding schedule:", error);
+        addNotification({
+          title: "Erreur",
+          message: "Erreur lors de la planification de la publication",
+        });
       }
     }
-    setShowModal(false);
-    setSelectedDate(null);
-    setSelectedDesign('');
   };
 
   const handleEventClick = async (clickInfo) => {
-    if (confirm('Voulez-vous supprimer cette planification ?')) {
+    if (confirm("Voulez-vous supprimer cette planification ?")) {
       try {
         await deleteSchedule(clickInfo.event.id);
         clickInfo.event.remove();
+        addNotification({
+          title: "Succès",
+          message: "Publication supprimée avec succès",
+        });
       } catch (error) {
-        console.error('Error deleting schedule:', error);
+        console.error("Error deleting schedule:", error);
+        addNotification({
+          title: "Erreur",
+          message: "Erreur lors de la suppression de la publication",
+        });
       }
     }
   };
@@ -87,24 +114,25 @@ export default function Calendar() {
           events={events}
           eventClick={handleEventClick}
           headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,dayGridWeek'
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,dayGridWeek",
           }}
           locale="fr"
         />
       </div>
 
-      {/* Modal de planification */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Planifier une publication</h2>
+              <h2 className="text-xl font-semibold">
+                Planifier une publication
+              </h2>
               <button
                 onClick={() => {
                   setShowModal(false);
-                  setSelectedDesign('');
+                  setSelectedDesign("");
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -156,7 +184,7 @@ export default function Calendar() {
                 </label>
                 <input
                   type="date"
-                  value={selectedDate || ''}
+                  value={selectedDate || ""}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   required
@@ -168,7 +196,7 @@ export default function Calendar() {
                   type="button"
                   onClick={() => {
                     setShowModal(false);
-                    setSelectedDesign('');
+                    setSelectedDesign("");
                   }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >

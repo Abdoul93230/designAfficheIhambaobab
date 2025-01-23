@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, CodeBracketIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { useDesigns } from '../context/DesignContext';
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  ArrowLeftIcon,
+  CodeBracketIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
+import { useDesigns } from "../context/DesignContext";
 
 export default function DesignDetail() {
   const { id } = useParams();
